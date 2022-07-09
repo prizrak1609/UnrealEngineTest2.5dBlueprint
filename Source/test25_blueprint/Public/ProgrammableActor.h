@@ -25,8 +25,13 @@ public:
 
 	void SpawnBullet(int ImpulseStrength);
 
-	void Move(int Length);
+	void Teleport(int Length);
+	void Forward(int Length);
+	void Up(int Length);
 
 	UPROPERTY(EditDefaultsOnly, Category = "ActorSpawning")
 	TSubclassOf<AActor> bulletActor;
+
+private:
+	FTimerHandle timerHandle;
 };

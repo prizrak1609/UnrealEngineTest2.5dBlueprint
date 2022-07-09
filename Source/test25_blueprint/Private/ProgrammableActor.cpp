@@ -17,7 +17,12 @@ AProgrammableActor::AProgrammableActor()
 void AProgrammableActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+	component->BodyInstance.bLockTranslation = true;
+	component->BodyInstance.bLockYTranslation = true;
+	component->BodyInstance.bLockZTranslation = true;
+
+	component->SetConstraintMode(EDOFMode::SixDOF);
 }
 
 // Called every frame
@@ -57,9 +62,53 @@ void AProgrammableActor::SpawnBullet(int ImpulseStrength)
 	FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
 }
 
-void AProgrammableActor::Move(int Length)
+void AProgrammableActor::Teleport(int Length)
 {
-	FOutputDeviceNull device;
-	FString function = FString::Printf(TEXT("MoveEvent %d"), Length);
-	CallFunctionByNameWithArguments(*function, device, nullptr, true);
+	FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this]
+		{
+			UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+			component->SetConstraintMode(EDOFMode::YZPlane);
+
+			FOutputDeviceNull device;
+			FString function = FString::Printf(TEXT("TeleportEvent %d"), Length);
+			CallFunctionByNameWithArguments(*function, device, nullptr, true);
+
+			component->SetConstraintMode(EDOFMode::SixDOF);
+		}, TStatId{}, nullptr, ENamedThreads::GameThread);
+
+	FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
+}
+
+void AProgrammableActor::Forward(int Length)
+{
+	FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([this, Length]
+		{
+			UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+			component->SetConstraintMode(EDOFMode::YZPlane);
+
+			UCodeParser::Print(FString::Printf(TEXT("Forward event = %d"), Length));
+			FVector location = FVector::YAxisVector * Length;
+			GetRootComponent()->MoveComponent(location, FRotator::ZeroRotator, false);
+
+			component->SetConstraintMode(EDOFMode::SixDOF);
+		}, TStatId{}, nullptr, ENamedThreads::GameThread);
+
+	FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
+}
+
+void AProgrammableActor::Up(int Length)
+{
+	FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this]
+		{
+			UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+			component->SetConstraintMode(EDOFMode::YZPlane);
+
+			UCodeParser::Print(FString::Printf(TEXT("Up event = %d"), Length));
+			FVector location = FVector::ZAxisVector * Length;
+			GetRootComponent()->MoveComponent(location, FRotator::ZeroRotator, false);
+
+			component->SetConstraintMode(EDOFMode::SixDOF);
+		}, TStatId{}, nullptr, ENamedThreads::GameThread);
+
+	FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
 }

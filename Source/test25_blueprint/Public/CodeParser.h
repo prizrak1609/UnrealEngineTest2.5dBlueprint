@@ -21,4 +21,5 @@ public:
 	static void ParseCodeCPP(FString code, AActor* actor);
 
 	static void PrintError(FString text);
+	static void Print(FString text);
 };

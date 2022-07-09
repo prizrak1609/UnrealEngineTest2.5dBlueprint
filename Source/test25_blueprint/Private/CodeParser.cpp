@@ -36,13 +36,21 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 				chunk.TrimStartAndEndInline();
 			}
 
-			if (chunks[0].Compare("move", ESearchCase::IgnoreCase) == 0)
+			if (chunks[0].Compare("teleport", ESearchCase::IgnoreCase) == 0)
 			{
-				programmableActor->Move(FCString::Atoi(*(chunks[1])));
+				programmableActor->Teleport(FCString::Atoi(*(chunks[1])));
 			}
 			else if (chunks[0].Compare("bullet", ESearchCase::IgnoreCase) == 0)
 			{
 				programmableActor->SpawnBullet(FCString::Atoi(*(chunks[1])));
+			}
+			else if (chunks[0].Compare("up", ESearchCase::IgnoreCase) == 0)
+			{
+				programmableActor->Up(FCString::Atoi(*(chunks[1])));
+			}
+			else if (chunks[0].Compare("forward", ESearchCase::IgnoreCase) == 0)
+			{
+				programmableActor->Forward(FCString::Atoi(*(chunks[1])));
 			}
 			else
 			{
@@ -61,4 +69,9 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 void UCodeParser::PrintError(FString text)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, text);
+}
+
+void UCodeParser::Print(FString text)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, text);
 }
