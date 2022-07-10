@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Runtime\Core\Public\Async\TaskGraphInterfaces.h"
+#include "Runtime\Engine\Classes\Components\InterpToMovementComponent.h"
+#include "ITask.h"
 #include "ProgrammableActor.generated.h"
 
 UCLASS()
@@ -14,6 +17,12 @@ class TEST25_BLUEPRINT_API AProgrammableActor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AProgrammableActor();
+
+	enum class State : UINT
+	{
+		MOVING,
+		IDLE
+	};
 
 protected:
 	// Called when the game starts or when spawned
@@ -29,9 +38,16 @@ public:
 	void Forward(int Length);
 	void Up(int Length);
 
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void MovementStopped();
+
 	UPROPERTY(EditDefaultsOnly, Category = "ActorSpawning")
 	TSubclassOf<AActor> bulletActor;
 
 private:
 	FTimerHandle timerHandle;
+	State currentState;
+	FVector targetLocation;
+	float speed;
+	UInterpToMovementComponent* movementComponent;
 };

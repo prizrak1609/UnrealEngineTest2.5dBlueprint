@@ -19,7 +19,4 @@ class TEST25_BLUEPRINT_API UCodeParser : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintCallable)
 	static void ParseCodeCPP(FString code, AActor* actor);
-
-	static void PrintError(FString text);
-	static void Print(FString text);
 };

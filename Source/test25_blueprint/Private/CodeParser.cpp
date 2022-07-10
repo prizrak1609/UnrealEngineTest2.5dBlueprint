@@ -2,6 +2,7 @@
 
 #include "CodeParser.h"
 #include "ProgrammableActor.h"
+#include "ProjectUtils.h"
 
 #include <thread>
 #include <chrono>
@@ -12,7 +13,7 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 
 	if (programmableActor == nullptr)
 	{
-		PrintError(TEXT("Actor is not programmable"));
+		UProjectUtils::PrintError(TEXT("Actor is not programmable"));
 		return;
 	}
 
@@ -54,7 +55,7 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 			}
 			else
 			{
-				PrintError(FString(TEXT("Unknown command ")).Append(chunks[0]));
+				UProjectUtils::PrintError(FString(TEXT("Unknown command ")).Append(chunks[0]));
 				error = true;
 			}
 
@@ -64,14 +65,4 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 			}
 		}
 	} });
-}
-
-void UCodeParser::PrintError(FString text)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, text);
-}
-
-void UCodeParser::Print(FString text)
-{
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, text);
 }
