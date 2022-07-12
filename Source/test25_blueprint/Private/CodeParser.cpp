@@ -17,52 +17,55 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 		return;
 	}
 
-	FFunctionGraphTask::CreateAndDispatchWhenReady( { [code, programmableActor] {
-		TArray<FString> commands;
-		code.ParseIntoArrayLines(commands);
+	Async(EAsyncExecution::Thread, [code, programmableActor] {
+			TArray<FString> commands;
+			code.ParseIntoArrayLines(commands);
 
-		bool error = false;
+			bool error = false;
 
-		TArray<FString> chunks;
-		for (FString& command : commands)
-		{
-			error = false;
-			command.TrimStartAndEndInline();
+			TArray<FString> chunks;
+			for (FString& command : commands)
+			{
+				error = false;
+				command.TrimStartAndEndInline();
 
-			chunks.Reset();
-			command.ParseIntoArray(chunks,TEXT(" "));
+				chunks.Reset();
+				command.ParseIntoArray(chunks, TEXT(" "));
 
-			for (FString& chunk : chunks)
-			{
-				chunk.TrimStartAndEndInline();
-			}
+				for (FString& chunk : chunks)
+				{
+					chunk.TrimStartAndEndInline();
+				}
 
-			if (chunks[0].Compare("teleport", ESearchCase::IgnoreCase) == 0)
-			{
-				programmableActor->Teleport(FCString::Atoi(*(chunks[1])));
-			}
-			else if (chunks[0].Compare("bullet", ESearchCase::IgnoreCase) == 0)
-			{
-				programmableActor->SpawnBullet(FCString::Atoi(*(chunks[1])));
-			}
-			else if (chunks[0].Compare("up", ESearchCase::IgnoreCase) == 0)
-			{
-				programmableActor->Up(FCString::Atoi(*(chunks[1])));
-			}
-			else if (chunks[0].Compare("forward", ESearchCase::IgnoreCase) == 0)
-			{
-				programmableActor->Forward(FCString::Atoi(*(chunks[1])));
-			}
-			else
-			{
-				UProjectUtils::PrintError(FString(TEXT("Unknown command ")).Append(chunks[0]));
-				error = true;
-			}
+				if (chunks[0].Compare("teleport", ESearchCase::IgnoreCase) == 0)
+				{
+					programmableActor->Teleport(FCString::Atoi(*(chunks[1])));
+				}
+				else if (chunks[0].Compare("bullet", ESearchCase::IgnoreCase) == 0)
+				{
+					programmableActor->SpawnBullet(FCString::Atoi(*(chunks[1])));
+				}
+				else if (chunks[0].Compare("up", ESearchCase::IgnoreCase) == 0)
+				{
+					programmableActor->Up(FCString::Atoi(*(chunks[1])));
+				}
+				else if (chunks[0].Compare("forward", ESearchCase::IgnoreCase) == 0)
+				{
+					programmableActor->Forward(FCString::Atoi(*(chunks[1])));
+				}
+				else
+				{
+					UProjectUtils::PrintError(FString(TEXT("Unknown command ")).Append(chunks[0]));
+					error = true;
+				}
 
-			if (!error)
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				if (!error)
+				{
+					while (programmableActor->currentState != AProgrammableActor::State::IDLE)
+					{
+						std::this_thread::sleep_for(std::chrono::milliseconds(100));
+					}
+				}
 			}
-		}
-	} });
+		});
 }

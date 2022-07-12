@@ -7,17 +7,17 @@
 #include "ProjectUtils.h"
 
 // Sets default values
-AProgrammableActor::AProgrammableActor() : currentState(State::IDLE), targetLocation(FVector::ZeroVector), speed(0)
+AProgrammableActor::AProgrammableActor() : currentState(State::IDLE)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 // Called when the game starts or when spawned
 void AProgrammableActor::BeginPlay()
 {
 	Super::BeginPlay();
-	UStaticMeshComponent* meshComponent = Cast<UStaticMeshComponent>(GetRootComponent());
+	UMeshComponent* meshComponent = Cast<UMeshComponent>(GetRootComponent());
 	meshComponent->BodyInstance.bLockXTranslation = true;
 	meshComponent->BodyInstance.bLockYTranslation = true;
 	meshComponent->BodyInstance.bLockZTranslation = true;
@@ -37,13 +37,6 @@ void AProgrammableActor::BeginPlay()
 	}
 }
 
-// Called every frame
-void AProgrammableActor::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	//UCodeParser::Print(FString::Printf(TEXT("component y %f, movement points %d"), GetRootComponent()->GetComponentLocation().Y, movementComponent->PhysicsLockedAxisSettingChanged()));
-}
-
 void AProgrammableActor::SpawnBullet(int ImpulseStrength)
 {
 	FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([this, ImpulseStrength]
@@ -58,7 +51,7 @@ void AProgrammableActor::SpawnBullet(int ImpulseStrength)
 				UProjectUtils::PrintError(TEXT("Cannot spawn bullet"));
 				return;
 			}
-			UStaticMeshComponent* mesh = Cast<UStaticMeshComponent>(bullet->GetRootComponent());
+			UMeshComponent* mesh = Cast<UMeshComponent>(bullet->GetRootComponent());
 			if (mesh == nullptr)
 			{
 				UProjectUtils::PrintError(TEXT("Cannot get bullet Mesh"));
@@ -78,7 +71,7 @@ void AProgrammableActor::Teleport(int Length)
 {
 	FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this]
 		{
-			UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+			UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
 			component->BodyInstance.bLockYTranslation = false;
 			component->SetConstraintMode(EDOFMode::SixDOF);
 
@@ -97,56 +90,88 @@ void AProgrammableActor::Forward(int Length)
 {
 	if (movementComponent != nullptr)
 	{
-		UProjectUtils::Print(FString::Printf(TEXT("Forward started %d"), Length));
+		currentState = State::MOVING;
+		FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this] {
+				UProjectUtils::Print(FString::Printf(TEXT("Forward started %d"), Length));
 
-		UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
-		component->SetSimulatePhysics(false);
-		component->BodyInstance.bLockYTranslation = false;
-		component->SetConstraintMode(EDOFMode::SixDOF);
+				UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
+				component->SetSimulatePhysics(false);
+				component->BodyInstance.bLockYTranslation = false;
+				component->SetConstraintMode(EDOFMode::SixDOF);
 
-		movementComponent->ResetControlPoints();
-		FVector currentLocation = FVector::YAxisVector;
-		// first point
-		movementComponent->AddControlPointPosition(currentLocation);
+				SetUpdatedComponentIfNeeded(component);
 
-		// last point
-		currentLocation.Y += Length;
-		movementComponent->AddControlPointPosition(currentLocation);
-		movementComponent->FinaliseControlPoints();
-		movementComponent->UpdateTickRegistration();
+				movementComponent->ResetControlPoints();
+				FVector currentLocation = FVector::ZeroVector;
+				// first point
+				movementComponent->AddControlPointPosition(currentLocation);
 
-		UProjectUtils::Print(FString::Printf(TEXT("Updated component is null %d"), movementComponent->UpdatedComponent == nullptr));
+				// last point
+				currentLocation.Y += Length;
+				movementComponent->AddControlPointPosition(currentLocation);
+				movementComponent->FinaliseControlPoints();
+				movementComponent->RestartMovement();
+			}, TStatId{}, nullptr, ENamedThreads::GameThread);
+
+		FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
 	}
 	else
 	{
-		UProjectUtils::PrintError("move component is null");
+		UProjectUtils::PrintError("move component forward is null");
 	}
 }
 
 void AProgrammableActor::Up(int Length)
 {
-	FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this]
-		{
-			UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+	if (movementComponent != nullptr)
+	{
+		currentState = State::MOVING;
+		FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this] {
+			UProjectUtils::Print(FString::Printf(TEXT("Up started %d"), Length));
+
+			UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
+			component->SetSimulatePhysics(false);
 			component->BodyInstance.bLockZTranslation = false;
 			component->SetConstraintMode(EDOFMode::SixDOF);
 
-			UProjectUtils::Print(FString::Printf(TEXT("Up event = %d"), Length));
-			FVector location = FVector::ZAxisVector * Length;
-			GetRootComponent()->MoveComponent(location, FRotator::ZeroRotator, false);
+			SetUpdatedComponentIfNeeded(component);
 
-			component->BodyInstance.bLockZTranslation = true;
-			component->SetConstraintMode(EDOFMode::SixDOF);
-		}, TStatId{}, nullptr, ENamedThreads::GameThread);
+			movementComponent->ResetControlPoints();
+			FVector currentLocation = FVector::ZeroVector;
+			// first point
+			movementComponent->AddControlPointPosition(currentLocation);
 
-	FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
+			// last point
+			currentLocation.Z += Length;
+			movementComponent->AddControlPointPosition(currentLocation);
+			movementComponent->FinaliseControlPoints();
+			movementComponent->RestartMovement();
+			}, TStatId{}, nullptr, ENamedThreads::GameThread);
+
+		FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
+	}
+	else
+	{
+		UProjectUtils::PrintError("move component up is null");
+	}
 }
 
+// this fucntion is executed from blueprint so on Game thread
 void AProgrammableActor::MovementStopped()
 {
 	UProjectUtils::Print(TEXT("Movement stopped"));
-	UStaticMeshComponent* component = Cast<UStaticMeshComponent>(GetRootComponent());
+	UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
 	component->SetSimulatePhysics(true);
+	component->BodyInstance.bLockZTranslation = true;
 	component->BodyInstance.bLockYTranslation = true;
 	component->SetConstraintMode(EDOFMode::SixDOF);
+	currentState = State::IDLE;
+}
+
+void AProgrammableActor::SetUpdatedComponentIfNeeded(UMeshComponent* component)
+{
+	if (movementComponent->UpdatedComponent == nullptr)
+	{
+		movementComponent->SetUpdatedComponent(component);
+	}
 }

@@ -29,9 +29,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	void SpawnBullet(int ImpulseStrength);
 
 	void Teleport(int Length);
@@ -44,10 +41,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "ActorSpawning")
 	TSubclassOf<AActor> bulletActor;
 
-private:
-	FTimerHandle timerHandle;
 	State currentState;
-	FVector targetLocation;
-	float speed;
+
+private:
 	UInterpToMovementComponent* movementComponent;
+
+	void SetUpdatedComponentIfNeeded(UMeshComponent* component);
 };
