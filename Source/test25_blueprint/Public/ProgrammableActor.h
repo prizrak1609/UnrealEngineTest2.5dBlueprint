@@ -44,7 +44,19 @@ public:
 	State currentState;
 
 private:
+	enum class MoveDirection : UINT
+	{
+		UP,
+		DOWN,
+		LEFT,
+		RIGHT
+	};
+
 	UInterpToMovementComponent* movementComponent;
 
 	void SetUpdatedComponentIfNeeded(UMeshComponent* component);
+
+	void PrepareForMove(MoveDirection direction, FVector initialPoint = FVector::ZeroVector);
+
+	void StartMoving();
 };

@@ -94,23 +94,15 @@ void AProgrammableActor::Forward(int Length)
 		FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this] {
 				UProjectUtils::Print(FString::Printf(TEXT("Forward started %d"), Length));
 
-				UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
-				component->SetSimulatePhysics(false);
-				component->BodyInstance.bLockYTranslation = false;
-				component->SetConstraintMode(EDOFMode::SixDOF);
-
-				SetUpdatedComponentIfNeeded(component);
-
-				movementComponent->ResetControlPoints();
 				FVector currentLocation = FVector::ZeroVector;
-				// first point
-				movementComponent->AddControlPointPosition(currentLocation);
+
+				PrepareForMove(MoveDirection::LEFT, currentLocation);
 
 				// last point
 				currentLocation.Y += Length;
 				movementComponent->AddControlPointPosition(currentLocation);
-				movementComponent->FinaliseControlPoints();
-				movementComponent->RestartMovement();
+				
+				StartMoving();
 			}, TStatId{}, nullptr, ENamedThreads::GameThread);
 
 		FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
@@ -129,23 +121,15 @@ void AProgrammableActor::Up(int Length)
 		FGraphEventRef task = FFunctionGraphTask::CreateAndDispatchWhenReady([Length, this] {
 			UProjectUtils::Print(FString::Printf(TEXT("Up started %d"), Length));
 
-			UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
-			component->SetSimulatePhysics(false);
-			component->BodyInstance.bLockZTranslation = false;
-			component->SetConstraintMode(EDOFMode::SixDOF);
-
-			SetUpdatedComponentIfNeeded(component);
-
-			movementComponent->ResetControlPoints();
 			FVector currentLocation = FVector::ZeroVector;
-			// first point
-			movementComponent->AddControlPointPosition(currentLocation);
+
+			PrepareForMove(MoveDirection::UP, currentLocation);
 
 			// last point
 			currentLocation.Z += Length;
 			movementComponent->AddControlPointPosition(currentLocation);
-			movementComponent->FinaliseControlPoints();
-			movementComponent->RestartMovement();
+			
+			StartMoving();
 			}, TStatId{}, nullptr, ENamedThreads::GameThread);
 
 		FTaskGraphInterface::Get().WaitUntilTaskCompletes(task);
@@ -174,4 +158,35 @@ void AProgrammableActor::SetUpdatedComponentIfNeeded(UMeshComponent* component)
 	{
 		movementComponent->SetUpdatedComponent(component);
 	}
+}
+
+void AProgrammableActor::PrepareForMove(MoveDirection direction, FVector initialPoint)
+{
+	UMeshComponent* component = Cast<UMeshComponent>(GetRootComponent());
+	component->SetSimulatePhysics(false);
+	switch (direction)
+	{
+	case MoveDirection::UP: 
+	case MoveDirection::DOWN:
+		component->BodyInstance.bLockZTranslation = true;
+		break;
+	case MoveDirection::RIGHT:
+	case MoveDirection::LEFT:
+		component->BodyInstance.bLockYTranslation = true;
+		break;
+	}
+	component->SetConstraintMode(EDOFMode::SixDOF);
+
+	SetUpdatedComponentIfNeeded(component);
+
+	movementComponent->ResetControlPoints();
+
+	// first point
+	movementComponent->AddControlPointPosition(initialPoint);
+}
+
+void AProgrammableActor::StartMoving()
+{
+	movementComponent->FinaliseControlPoints();
+	movementComponent->RestartMovement();
 }
