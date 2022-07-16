@@ -43,6 +43,10 @@ public:
 
 	State currentState;
 
+	void PrepareForActions();
+
+	void ActionsEnd();
+
 private:
 	enum class MoveDirection : UINT
 	{

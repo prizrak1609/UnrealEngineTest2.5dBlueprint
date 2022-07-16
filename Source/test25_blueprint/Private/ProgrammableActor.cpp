@@ -152,6 +152,18 @@ void AProgrammableActor::MovementStopped()
 	currentState = State::IDLE;
 }
 
+void AProgrammableActor::PrepareForActions()
+{
+	FOutputDeviceNull device;
+	CallFunctionByNameWithArguments(TEXT("ActivateComponent"), device, nullptr, true);
+}
+
+void AProgrammableActor::ActionsEnd()
+{
+	FOutputDeviceNull device;
+	CallFunctionByNameWithArguments(TEXT("DeactivateComponent"), device, nullptr, true);
+}
+
 void AProgrammableActor::SetUpdatedComponentIfNeeded(UMeshComponent* component)
 {
 	if (movementComponent->UpdatedComponent == nullptr)

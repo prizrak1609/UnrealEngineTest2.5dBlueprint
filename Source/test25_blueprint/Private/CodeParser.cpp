@@ -21,6 +21,8 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 			TArray<FString> commands;
 			code.ParseIntoArrayLines(commands);
 
+			programmableActor->PrepareForActions();
+
 			bool error = false;
 
 			TArray<FString> chunks;
@@ -67,5 +69,7 @@ void UCodeParser::ParseCodeCPP(FString code, AActor* actor)
 					}
 				}
 			}
+
+			programmableActor->ActionsEnd();
 		});
 }

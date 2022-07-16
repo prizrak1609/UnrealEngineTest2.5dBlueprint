@@ -111,10 +111,6 @@
 			]
 		},
 		{
-			"Name": "CodeView",
-			"Enabled": true
-		},
-		{
 			"Name": "CodeLiteSourceCodeAccess",
 			"Enabled": false
 		},
@@ -147,6 +143,10 @@
 		},
 		{
 			"Name": "SubversionSourceControl",
+			"Enabled": false
+		},
+		{
+			"Name": "RiderSourceCodeAccess",
 			"Enabled": false
 		}
 	],
